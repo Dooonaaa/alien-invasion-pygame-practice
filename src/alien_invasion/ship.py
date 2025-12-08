@@ -8,7 +8,7 @@ class Ship(Sprite):   #让Ship继承Sprite
         self.settings = ai_game.settings   #需要飞船速度参数
         self.screen_rect = ai_game.screen.get_rect()
 
-        self.image = pygame.image.load('images/ship.bmp')  #用自己选择的图像
+        self.image = pygame.image.load('assets/images/ship.bmp')  #用自己选择的图像
         self.image.set_colorkey((230, 230, 230))  # 把原本的深灰色设为透明
         self.rect = self.image.get_rect()
 
@@ -31,6 +31,7 @@ class Ship(Sprite):   #让Ship继承Sprite
 
     def blitme(self):
         self.screen.blit(self.image, self.rect)
+
 
 
 
