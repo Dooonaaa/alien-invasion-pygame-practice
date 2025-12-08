@@ -7,8 +7,8 @@ class Alien(Sprite):   #创建外星人的类，继承自父类Sprite
         self.screen = ai_game.screen   #需要画在屏幕上
         self.settings = ai_game.settings   #需要外星人速度参数
 
-        self.image = pygame.image.load('images/alien.bmp')   #读入外星人图片
-        self.rect = self.image.get_rect()  #
+        self.image = pygame.image.load('assets/images/alien.bmp')   #读入外星人图片
+        self.rect = self.image.get_rect()  
         self.image.set_colorkey((230, 230, 230))  # 把原本的深灰色设为透明
         #外星人初始均出现在左上角
         self.rect.x = self.rect.width
@@ -25,4 +25,5 @@ class Alien(Sprite):   #创建外星人的类，继承自父类Sprite
         # 移动量为alien_speed,浮点数,向右为加，向左为减
         self.x += self.settings.alien_speed * self.settings.fleet_direction
         self.rect.x = self.x   #更新横坐标，按整数
+
 
