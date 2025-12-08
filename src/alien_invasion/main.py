@@ -20,7 +20,7 @@ class AlienInvasion:
             (self.settings.screen_width,self.settings.screen_height))  #不是直接传数值
         self.screen_rect = self.screen.get_rect()
         pygame.display.set_caption("Alien Invasion")
-        self.bg_image = pygame.image.load('images/background.jpg')  #使用背景图
+        self.bg_image = pygame.image.load('assets/images/background.jpg')  #使用自己选的背景图
         self.game_active = False    #刚开始处于非活跃状态，点击play后才开始游戏
         self.game_over = False    #游戏结束状态初始为否
         self.paused = False   #初始暂停为否
@@ -245,4 +245,5 @@ class AlienInvasion:
 if __name__ == '__main__':
     ai = AlienInvasion()  # 创建游戏实例
     ai.run_game()  # 运行
+
 
