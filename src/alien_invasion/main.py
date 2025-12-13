@@ -10,17 +10,17 @@ from button import Button
 from scoreboard import Scoreboard
 
 
+
 class AlienInvasion:
     def __init__(self):   #初始化状态
         pygame.init()
         self.clock = pygame.time.Clock()
         self.settings = Settings()   #创建实例
-
         self.screen = pygame.display.set_mode(
             (self.settings.screen_width,self.settings.screen_height))  #不是直接传数值
         self.screen_rect = self.screen.get_rect()
         pygame.display.set_caption("Alien Invasion")
-        self.bg_image = pygame.image.load('assets/images/background.jpg')  #使用自己选的背景图
+        self.bg_image = pygame.image.load('images/background.jpg')  #使用背景图
         self.game_active = False    #刚开始处于非活跃状态，点击play后才开始游戏
         self.game_over = False    #游戏结束状态初始为否
         self.paused = False   #初始暂停为否
@@ -37,6 +37,16 @@ class AlienInvasion:
         self.restart_button.rect.center = self.screen_rect.center
         self.quit_button.rect.midtop = self.restart_button.rect.midbottom
 
+        # 音效
+        self.laser_sound = pygame.mixer.Sound("sounds/fire1.mp3")
+        self.laser_sound.set_volume(0.7)  # 设置音量
+
+        self.gameover_sound = pygame.mixer.Sound("sounds/game_over.wav")
+        self.gameover_sound.set_volume(0.7)  # 可根据需要调节音量
+
+
+
+
 
     def run_game(self):   #游戏主循环
         while True:   #侦听键盘和鼠标事件
@@ -51,6 +61,7 @@ class AlienInvasion:
     def _check_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                pygame.mixer.music.stop()
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
                 self._check_keydown_events(event)
@@ -63,22 +74,12 @@ class AlienInvasion:
                 elif self.restart_button.rect.collidepoint(mouse_pos):
                     self._check_restart_button(mouse_pos)
                 elif self.quit_button.rect.collidepoint(mouse_pos):
+                    pygame.mixer.music.stop()
                     sys.exit()
 
-    def _check_play_button(self, mouse_pos):   #当鼠标点击play按钮时
-        button_clicked = self.play_button.rect.collidepoint(mouse_pos)
-        if button_clicked and not self.game_active:
-            self.settings.initialize_dynamic_settings()  #开始新游戏时还原游戏设置
-            self.stats.reset_stats()    #重置游戏状态
-            self.sb.prep_score()   #重置记分牌上的得分
-            self.sb.prep_level()    #重置等级记录
-            self.sb.prep_ships()    #重置飞船数
-            self.game_active = True
-            self.bullets.empty()      #将子弹清屏
-            self.aliens.empty()       #将外星人清屏
-            self._create_fleet()        #新的舰队
-            self.ship.center_ship()     #新的飞船，底部居中
-            pygame.mouse.set_visible(False)   #隐藏光标
+    def _check_play_button(self, mouse_pos):
+        if self.play_button.rect.collidepoint(mouse_pos) and not self.game_active:
+            self._start_new_game()
 
     def _check_keydown_events(self,event):   #辅助方法，按下按键
         if event.key == pygame.K_RIGHT:      #当按键为→时
@@ -86,13 +87,18 @@ class AlienInvasion:
         elif event.key == pygame.K_LEFT:     #当按键为←时
             self.ship.moving_left = True     #左移标志变为真
         elif event.key == pygame.K_q:        #当按键为q时
+            pygame.mixer.music.stop()
             sys.exit()                       #结束游戏
         elif event.key == pygame.K_SPACE:    #当按下空格键
             self._fire_bullet()              #开火
         elif event.key == pygame.K_p:        #当按下p键
-            if self.game_active and not self.game_over :   #游戏活跃状态
+            if self.game_active and not self.game_over :
                 self.paused = not self.paused    #暂停与继续状态互换
                 print(f"Paused: {self.paused}")
+                if self.paused:
+                    pygame.mixer.music.pause()     #音乐暂停
+                else:
+                    pygame.mixer.music.unpause()   #音乐继续
 
     def _check_keyup_events(self,event):    #辅助方法，释放按键
         if event.key == pygame.K_RIGHT:      #右移键释放后，右移标志归零
@@ -101,8 +107,10 @@ class AlienInvasion:
             self.ship.moving_left = False
 
     def _fire_bullet(self):    #管理开火操作的方法
-        new_bullet = Bullet(self)
+        new_bullet = Bullet(self)    #创建子弹
+
         self.bullets.add(new_bullet)
+        self.laser_sound.play()  # 播放发射音效
 
     def _update_bullets(self):    #管理子弹位置的方法
         self.bullets.update()
@@ -182,6 +190,7 @@ class AlienInvasion:
         if not self.game_active:
             if self.game_over:  #游戏结束状态时
                 self._draw_game_over()    #就在屏幕绘制两个按钮
+
             else:
                 self.play_button.draw_button()
         if self.paused:
@@ -205,7 +214,9 @@ class AlienInvasion:
         else:                            #飞船数为0时再撞击就game over
              self.game_active = False    #游戏活动状态为否
              self.game_over = True       #游戏结束状态为真
+             pygame.mixer.music.stop()  # 背景音乐结束
              pygame.mouse.set_visible(True)   #game over 后，光标重新显示
+             self.gameover_sound.play()
 
     def _check_aliens_bottom(self):
         for alien in self.aliens.sprites():
@@ -236,14 +247,38 @@ class AlienInvasion:
         self.quit_button.draw_button()
 
     def _check_restart_button(self,mouse_pos):
+        if self.restart_button.rect.collidepoint(mouse_pos):
+            self._start_new_game()
+
+    def _start_new_game(self):
+        # 播放 / 重启 BGM
+        pygame.mixer.music.stop()
+        pygame.mixer.music.load('sounds/bgm.wav')
+        pygame.mixer.music.set_volume(0.6)
+        pygame.mixer.music.play(-1)
+
+        # 重置动态设置
+        self.settings.initialize_dynamic_settings()
+
+        # 重置游戏状态
+        self.stats.reset_stats()
+        self.sb.prep_score()
+        self.sb.prep_level()
+        self.sb.prep_ships()
+
+        # 清空并重新生成对象
+        self.bullets.empty()
+        self.aliens.empty()
+        self._create_fleet()
+        self.ship.center_ship()
+
+        # 状态切换
         self.game_over = False
-        self.game_active = True   #显示设置
-        self._check_play_button(mouse_pos)
+        self.game_active = True
         pygame.mouse.set_visible(False)
 
 
 if __name__ == '__main__':
     ai = AlienInvasion()  # 创建游戏实例
     ai.run_game()  # 运行
-
 
